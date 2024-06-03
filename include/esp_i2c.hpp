@@ -5,7 +5,6 @@
 #if __has_include(<Arduino.h>)
 #include <Arduino.h>
 #include <Wire.h>
-
 #else
 #include <esp_idf_version.h>
 #include <stddef.h>
@@ -24,9 +23,6 @@ namespace esp_idf {
 #endif
 template<int Port, uint8_t SdaPin, uint8_t SclPin>
 class esp_i2c {
-#if defined(ARDUINO) || ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
-    static bool m_initialized;
-#endif
 public:
 #ifdef ARDUINO
     static TwoWire& get_instance() {
@@ -57,21 +53,34 @@ public:
     }
     static i2c_master_bus_handle_t instance;
 #else
-    constexpr static const i2c_port_t instance = (i2c_port_t)Port;
+    static i2c_port_t instance;
+    static i2c_port_t get_instance() {
+        i2c_config_t conf;
+        memset(&conf,0,sizeof(conf));
+        conf.mode = I2C_MODE_MASTER;
+        conf.sda_io_num = I2C_MASTER_SDA_IO;         // select GPIO specific to your project
+        conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+        conf.scl_io_num = I2C_MASTER_SCL_IO;         // select GPIO specific to your project
+        conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+        conf.master.clk_speed = 100*1000;  // select frequency specific to your project
+        // .clk_flags = 0,          /*!< Optional, you can use I2C_SCLK_SRC_FLAG_* flags to choose i2c source clock here. */
+        i2c_param_config((i2c_port_t)Port,&conf);
+        i2c_driver_install((i2c_port_t)Port,I2C_MODE_MASTER,0,0,0);
+        return (i2c_port_t)Port;
+    }
 #endif
 #endif
 };
-#if defined(ARDUINO) || ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
-template<int Port, uint8_t SdaPin, uint8_t SclPin>
-bool esp_i2c<Port, SdaPin, SclPin>::m_initialized = false;
-#endif
-#if defined(ARDUINO) || ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 template<int Port, uint8_t SdaPin, uint8_t SclPin>
 #ifdef ARDUINO
 TwoWire& 
 #else
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 i2c_master_bus_handle_t 
+#else
+i2c_port_t
+#endif
 #endif
 esp_i2c<Port, SdaPin, SclPin>::instance = get_instance();
 }
-#endif
+//#endif

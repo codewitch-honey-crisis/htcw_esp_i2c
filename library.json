@@ -1,6 +1,6 @@
 {
     "name": "htcw_esp_i2c",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Provides cross platform access to ESP32 I2C bus initialization",
     "keywords": ["i2c", "esp32"],
     "authors": {
